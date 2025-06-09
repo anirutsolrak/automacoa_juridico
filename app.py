@@ -8,7 +8,7 @@ from utils import format_date, export_to_excel
 
 def main():
     st.set_page_config(
-        page_title="Análise de Reclamações - SLA Tracker",
+        page_title="datajuris - SLA Tracker",
         page_icon="📊",
         layout="wide"
     )
