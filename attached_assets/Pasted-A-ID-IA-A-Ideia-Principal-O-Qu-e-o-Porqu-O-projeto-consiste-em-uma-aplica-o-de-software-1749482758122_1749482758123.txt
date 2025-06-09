@@ -1,0 +1,516 @@
+A IDÉIA
+
+A Ideia Principal (O "Quê" e o "Porquê")
+O projeto consiste em uma aplicação de software com interface visual destinada a automatizar a análise de relatórios de reclamações de clientes, que são fornecidos em formato de planilha eletrônica (como Excel). A aplicação permitirá o processamento em lote desses arquivos, onde o usuário mapeia as colunas relevantes (como datas de abertura, prazo, resposta, ID do caso e nome da empresa) para que o sistema possa realizar cálculos e classificações. O objetivo principal é gerar um novo relatório consolidado, exibido na interface e disponível para download, contendo métricas chave como SLA (Service Level Agreement), quantidade total de reclamações, status de resposta (respondidas, não respondidas, dentro/fora do prazo), e um sistema de alertas para reclamações com prazos críticos.
+O "porquê" desta automação é reduzir drasticamente o esforço manual e o tempo gasto na consolidação e análise desses relatórios, minimizar erros humanos inerentes a processos manuais, fornecer insights rápidos e acionáveis sobre o desempenho do atendimento e ajudar na priorização de casos urgentes, melhorando a gestão de SLAs.
+
+Problema
+A análise manual de múltiplos relatórios de reclamações em formato de planilha é uma tarefa intensiva em tempo, repetitiva e altamente suscetível a erros de cálculo e interpretação. Diferentes relatórios podem ter estruturas de colunas variadas, dificultando a consolidação padronizada. Isso leva a uma deficiência na obtenção de uma visão clara e ágil sobre o volume de reclamações, o cumprimento de prazos (SLA) e a identificação proativa de casos que exigem atenção imediata para evitar estouro de prazo. A falta de uma ferramenta centralizada e automatizada impede uma gestão eficiente e a tomada de decisão baseada em dados atualizados.
+
+Solução Proposta
+Uma aplicação (desktop ou web local) com as seguintes funcionalidades:
+
+Interface de Usuário Intuitiva: Permitir que o usuário selecione múltiplos arquivos de planilha para processamento em lote.
+
+Mapeamento de Colunas Dinâmico: Para cada lote, o usuário especificará:
+
+A linha onde o cabeçalho dos dados se inicia na planilha.
+
+Qual coluna da planilha corresponde a: ID da Reclamação, Data de Abertura, Data de Prazo para Resposta, Data Efetiva da Resposta (se houver), e Nome da Empresa. A interface fornecerá descrições para auxiliar o usuário na identificação correta destas colunas.
+
+Processamento Automatizado: O sistema lerá os dados dos arquivos, aplicando as regras de negócio para:
+
+Calcular o tempo de resposta para cada reclamação respondida.
+
+Determinar o SLA médio.
+
+Quantificar o total de reclamações, as respondidas e as não respondidas.
+
+Classificar as respondidas como "dentro do prazo" ou "fora do prazo".
+
+Identificar as não respondidas que ainda estão "no prazo" ou que já "estouraram o prazo".
+
+Sistema de Alertas: Para reclamações não respondidas e ainda no prazo, o sistema as categorizará com alertas visuais/textuais:
+
+"Em Cima do Prazo": Reclamações com 1 dia ou menos para o vencimento.
+
+"Perto de Ultrapassar o Prazo": Reclamações com 2 a 3 dias para o vencimento.
+
+"Prazo Flexível": Reclamações com 5 dias ou mais para o vencimento.
+
+Visualização e Filtragem: Exibirá os resultados consolidados (métricas gerais) e os dados detalhados de cada reclamação processada em uma tabela na interface. Permitirá filtrar os resultados por Nome da Empresa (Capital Consig, Clickbank, Hoje, CIASPREV).
+
+Relatório de Saída: Permitirá o download dos dados processados e das métricas em um novo arquivo de planilha.
+
+Tratamento de Erros/Dados Faltantes: Informará ao final do processamento quantos casos não puderam ser analisados devido à ausência de dados essenciais (ex: data de abertura, prazo ou ID do caso em branco).
+
+Benefício
+A implementação desta solução trará:
+
+Eficiência Operacional: Automação do processo de análise, liberando tempo da equipe para atividades de maior valor agregado.
+
+Precisão Aprimorada: Redução significativa de erros humanos nos cálculos e na consolidação dos dados.
+
+Gestão Proativa de SLAs: Identificação rápida de gargalos e reclamações críticas, permitindo ações corretivas antes do estouro de prazos.
+
+Visibilidade e Controle: Fornecimento de uma visão clara e consolidada do status das reclamações e do desempenho do atendimento.
+
+Tomada de Decisão Baseada em Dados: Métricas confiáveis para avaliação de performance e planejamento estratégico.
+
+Padronização: Uniformização da análise de relatórios, independentemente das variações nos formatos de entrada.
+
+Lógica de Negócio Detalhada (O "Como" Funciona a Regra)
+
+Entrada de Dados:
+
+Arquivos Fonte: Um ou mais arquivos de planilha (ex: .xlsx, .xls, .ods, .csv) por lote.
+
+Configuração do Lote (fornecida pelo usuário via interface):
+
+LINHA_INICIO_CABECALHO: Inteiro (ex: se o cabeçalho está na linha 5 da planilha, o usuário informa 5).
+
+MAP_COL_ID_CASO: String (nome da coluna na planilha contendo o identificador da reclamação. Ex: "Protocolo", "Nº Reclamação").
+
+MAP_COL_DATA_ABERTURA: String (nome da coluna com a data de criação/abertura. Ex: "Data de Início", "Abertura").
+
+MAP_COL_DATA_PRAZO: String (nome da coluna com a data limite para resposta. Ex: "Data de Vencimento", "Prazo Final").
+
+MAP_COL_DATA_RESPOSTA: String (nome da coluna com a data da resposta efetiva. Ex: "Data da Tratativa", "Respondido Em". Pode estar vazia).
+
+MAP_COL_NOME_EMPRESA: String (nome da coluna com o nome da empresa. Ex: "Empresa Reclamada", "Organização").
+
+Objetivo da Lógica:
+Processar os dados brutos de reclamações extraídos dos arquivos de planilha, aplicando cálculos de data e regras de classificação para gerar um conjunto de dados enriquecido e métricas sumárias que revelem o desempenho do SLA, o status das respostas, e os níveis de urgência das pendências.
+
+Desafio Central:
+
+Heterogeneidade dos Dados: Lidar com a variabilidade nos nomes das colunas e na formatação dos dados (especialmente datas) entre diferentes arquivos ou fontes de relatório.
+
+Qualidade dos Dados: Tratar adequadamente células vazias ou mal formatadas nas colunas críticas (datas, IDs), garantindo que apenas dados válidos sejam usados para cálculos e que os inválidos sejam reportados.
+
+Cálculos Temporais Precisos: Assegurar a correção no cálculo de diferenças entre datas para SLAs e prazos, e a correta comparação com a data atual para alertas. (Assumindo dias corridos, a menos que dias úteis sejam especificados posteriormente).
+
+Mapeamento Flexível: A interface e a lógica de backend devem ser robustas o suficiente para usar os nomes de colunas fornecidos pelo usuário para localizar os dados corretos.
+
+Etapa 1: Leitura e Validação Estrutural dos Arquivos
+
+O que é feito tecnicamente: Para cada arquivo de planilha fornecido no lote:
+
+Utilizar uma biblioteca ou ferramenta de manipulação de dados adequada para carregar o arquivo, especificando que o cabeçalho está na linha LINHA_INICIO_CABECALHO (ajustando para indexação base 0 se a ferramenta exigir).
+
+Verificar se todas as colunas mapeadas pelo usuário (MAP_COL_ID_CASO, MAP_COL_DATA_ABERTURA, etc.) existem efetivamente no arquivo carregado.
+
+Se um arquivo não puder ser lido ou se alguma coluna mapeada crucial estiver ausente, este arquivo é marcado como "não processável" e uma notificação é gerada para o usuário. O processamento continua com os próximos arquivos do lote, se houver.
+
+Lógica: (Use este marcador literal) Esta etapa é fundamental para garantir a integridade básica dos dados de entrada. Sem as colunas esperadas, nenhum cálculo ou análise subsequente pode ser realizado corretamente para aquele arquivo.
+
+Etapa 2: Extração, Limpeza e Padronização de Dados por Reclamação
+
+O que é feito tecnicamente: Para cada linha (representando uma reclamação) nos arquivos validados:
+
+Extrair os valores brutos das colunas mapeadas: id_caso_raw, data_abertura_raw, data_prazo_raw, data_resposta_raw, nome_empresa_raw.
+
+ID do Caso: Remover espaços em branco no início/fim. Se id_caso_raw for vazio ou nulo, a reclamação é marcada como "não processável por dados faltantes" e contada à parte.
+
+Datas:
+
+Tentar converter data_abertura_raw, data_prazo_raw e data_resposta_raw (se não vazia) para objetos de data/hora padronizados. Implementar uma tentativa robusta de parsing para formatos comuns de data.
+
+Se data_abertura_raw ou data_prazo_raw forem vazias, nulas, ou não puderem ser convertidas para datas válidas, a reclamação é marcada como "não processável por dados faltantes" e contada à parte.
+
+data_resposta_raw pode ser legitimamente vazia (indicando não respondida).
+
+Nome da Empresa: Converter nome_empresa_raw para um formato padrão (ex: tudo minúsculo, sem espaços excessivos). Realizar um mapeamento para os nomes de empresa conhecidos: "Capital Consig", "Clickbank", "Hoje", "CIASPREV". Se houver divergências, pode-se tentar uma correspondência por similaridade ou registrar como "Outra". Para este escopo, assume-se que os nomes nos relatórios serão próximos o suficiente.
+
+Se qualquer dado crítico (ID_CASO, DATA_ABERTURA, DATA_PRAZO) estiver faltando ou for inválido após a tentativa de limpeza/conversão, essa reclamação específica é descartada do processamento principal e adicionada a uma contagem de "casos não processados por dados faltantes".
+
+Lógica: (Use este marcador literal) Transformar os dados heterogêneos e potencialmente "sujos" de cada reclamação em um formato estruturado, limpo e consistente, que é essencial para a precisão dos cálculos e classificações nas etapas seguintes.
+
+Etapa 3: Cálculos de Status, Prazos e Alertas
+
+O que é feito tecnicamente: Para cada reclamação com dados validados da Etapa 2:
+
+DATA_PROCESSAMENTO = Data e hora atuais no momento da execução.
+
+Status da Resposta (STATUS_RECLAMACAO):
+
+Se DATA_RESPOSTA (convertida) for válida e não nula: STATUS_RECLAMACAO = "Respondida".
+
+Caso contrário: STATUS_RECLAMACAO = "Não Respondida".
+
+Tempo de Resposta (TEMPO_RESPOSTA_DIAS):
+
+Se STATUS_RECLAMACAO == "Respondida": TEMPO_RESPOSTA_DIAS = (DATA_RESPOSTA - DATA_ABERTURA) em dias (pode ser fracionário).
+
+Caso contrário: TEMPO_RESPOSTA_DIAS = N/A.
+
+Verificação de Prazo para Respondidas (STATUS_PRAZO_RESPOSTA):
+
+Se STATUS_RECLAMACAO == "Respondida":
+
+Se DATA_RESPOSTA <= DATA_PRAZO: STATUS_PRAZO_RESPOSTA = "Dentro do Prazo".
+
+Caso contrário: STATUS_PRAZO_RESPOSTA = "Fora do Prazo".
+
+Caso contrário: STATUS_PRAZO_RESPOSTA = N/A.
+
+Status de Pendência e Dias para Vencer (para Não Respondidas):
+
+Se STATUS_RECLAMACAO == "Não Respondida":
+
+DIAS_PARA_VENCER = (DATA_PRAZO.date() - DATA_PROCESSAMENTO.date()).days (diferença em dias inteiros, onde um valor positivo significa dias restantes, 0 significa vence hoje, negativo significa vencida).
+
+Se DIAS_PARA_VENCER < 0:
+
+STATUS_PENDENCIA = "Vencida e Não Respondida".
+
+Senão:
+
+STATUS_PENDENCIA = "No Prazo, Não Respondida".
+
+Caso contrário (STATUS_RECLAMACAO == "Respondida"):
+
+DIAS_PARA_VENCER = N/A.
+
+STATUS_PENDENCIA = N/A.
+
+Classificação de Alerta de Prazo (ALERTA_PRAZO para "No Prazo, Não Respondida"):
+
+Se STATUS_PENDENCIA == "No Prazo, Não Respondida":
+
+Se DIAS_PARA_VENCER <= 1 (inclui vencer hoje ou amanhã): ALERTA_PRAZO = "Em Cima do Prazo (<=1 dia)".
+
+Senão, se DIAS_PARA_VENCER <= 3 (2 ou 3 dias restantes): ALERTA_PRAZO = "Perto de Ultrapassar o Prazo (2-3 dias)".
+
+Senão, se DIAS_PARA_VENCER >= 5: ALERTA_PRAZO = "Prazo Flexível (>=5 dias)".
+
+Senão (DIAS_PARA_VENCER == 4): ALERTA_PRAZO = "Atenção (4 dias)" (ou pode ser agrupado em uma categoria existente ou deixado sem alerta específico dependendo da preferência final).
+
+Caso contrário: ALERTA_PRAZO = N/A.
+
+Lógica: (Use este marcador literal) Esta é a etapa central onde as regras de negócio são aplicadas para derivar informações significativas sobre o estado de cada reclamação, como seu progresso em relação ao prazo e a urgência de atenção, formando a base para os relatórios e métricas.
+
+Etapa 4: Agregação de Métricas Globais
+
+O que é feito tecnicamente: Após o processamento de todas as reclamações de todos os arquivos do lote:
+
+TOTAL_RECLAMACOES_PROCESSADAS = Contagem total de reclamações que passaram pela Etapa 3.
+
+TOTAL_RESPONDIDAS = Contagem de reclamações com STATUS_RECLAMACAO == "Respondida".
+
+TOTAL_NAO_RESPONDIDAS = Contagem de reclamações com STATUS_RECLAMACAO == "Não Respondida".
+
+TOTAL_RESPONDIDAS_DENTRO_PRAZO = Contagem de reclamações com STATUS_PRAZO_RESPOSTA == "Dentro do Prazo".
+
+TOTAL_RESPONDIDAS_FORA_PRAZO = Contagem de reclamações com STATUS_PRAZO_RESPOSTA == "Fora do Prazo".
+
+TOTAL_NO_PRAZO_NAO_RESPONDIDAS = Contagem de reclamações com STATUS_PENDENCIA == "No Prazo, Não Respondida".
+
+TOTAL_VENCIDAS_NAO_RESPONDIDAS = Contagem de reclamações com STATUS_PENDENCIA == "Vencida e Não Respondida".
+
+SLA (Tempo Médio de Resposta): Média de TEMPO_RESPOSTA_DIAS para todas as reclamações onde STATUS_RECLAMACAO == "Respondida". Se nenhuma foi respondida, SLA = N/A.
+
+Contagens por Nível de Alerta:
+
+QTD_ALERTA_EM_CIMA_PRAZO = Contagem de ALERTA_PRAZO == "Em Cima do Prazo (<=1 dia)".
+
+QTD_ALERTA_PERTO_ULTRAPASSAR = Contagem de ALERTA_PRAZO == "Perto de Ultrapassar o Prazo (2-3 dias)".
+
+QTD_ALERTA_PRAZO_FLEXIVEL = Contagem de ALERTA_PRAZO == "Prazo Flexível (>=5 dias)".
+
+QTD_ALERTA_ATENCAO_4_DIAS = Contagem de ALERTA_PRAZO == "Atenção (4 dias)".
+
+TOTAL_CASOS_NAO_PROCESSADOS_DADOS_FALTANTES = Contagem acumulada da Etapa 2.
+
+Lógica: (Use este marcador literal) Consolidar os dados individuais processados em indicadores de performance chave e totais que fornecem uma visão macro do desempenho e dos pontos críticos, facilitando a análise gerencial.
+
+Etapa 5: Formatação dos Resultados para Saída
+
+O que é feito tecnicamente:
+
+Dados Detalhados: Organizar todas as reclamações processadas (com seus campos originais limpos e os campos calculados/classificados) em uma estrutura tabular (ex: lista de dicionários ou uma estrutura de dados tabular otimizada). Cada registro conterá: ID_CASO, NOME_EMPRESA, DATA_ABERTURA, DATA_PRAZO, DATA_RESPOSTA, STATUS_RECLAMACAO, TEMPO_RESPOSTA_DIAS, STATUS_PRAZO_RESPOSTA, STATUS_PENDENCIA, DIAS_PARA_VENCER, ALERTA_PRAZO.
+
+Métricas Agregadas: Manter as métricas calculadas na Etapa 4 em uma estrutura separada (ex: um dicionário ou objeto).
+
+Mensagem de Status: Preparar uma mensagem resumindo o processamento, incluindo o número de TOTAL_CASOS_NAO_PROCESSADOS_DADOS_FALTANTES e quaisquer arquivos que não puderam ser lidos.
+
+Lógica: (Use este marcador literal) Estruturar os resultados de forma organizada e completa para que possam ser facilmente consumidos pela interface gráfica para exibição ao usuário e para a geração do arquivo de planilha final.
+
+Resumo da Lógica:
+A automação ingere arquivos de planilha de reclamações, permite ao usuário mapear as colunas de dados relevantes, limpa e padroniza esses dados, calcula o status de resposta, conformidade com o prazo e níveis de alerta para cada reclamação, e então agrega esses resultados em métricas de desempenho e totais, disponibilizando tanto os detalhes quanto o resumo para visualização e exportação.
+
+COMO EU IMAGINEI
+
+Estrutura Geral:
+
+Front-end: Uma aplicação com interface gráfica de usuário (GUI), que pode ser desenvolvida como uma aplicação desktop nativa ou uma aplicação web local. As tecnologias escolhidas devem permitir a criação de uma interface rica com elementos como seleção de arquivos, campos de entrada, tabelas de dados, botões e áreas de feedback para o usuário.
+
+Componentes: Janelas ou views, botões interativos, campos de formulário para entrada de texto, componentes de tabela para exibição de dados, diálogos de sistema para seleção de arquivos, elementos de texto para exibir métricas e mensagens de status.
+
+Back-end (Lógica de Processamento): Um conjunto de módulos ou serviços responsáveis pela lógica central da aplicação. A linguagem de programação e as bibliotecas utilizadas devem ser adequadas para:
+
+Interação com a interface gráfica (recebendo inputs e enviando resultados).
+
+Leitura, parsing e validação de arquivos de planilha (utilizando bibliotecas robustas para manipulação de formatos como .xlsx, .xls, .ods, .csv).
+
+Implementação da lógica de negócio detalhada (cálculos de data, classificações baseadas em regras, agregações estatísticas).
+
+Geração do relatório de saída em formato de planilha.
+
+Manipulação eficiente de estruturas de dados para armazenar e processar as informações das reclamações.
+
+Banco de Dados: Não é estritamente necessário para o escopo definido, pois o processamento é realizado sob demanda com base nos arquivos fornecidos pelo usuário. Os resultados são para visualização imediata e download, sem a necessidade de persistência de histórico de processamentos entre diferentes sessões da aplicação.
+
+Fluxo Passo a Passo:
+
+(Usuário): Inicia a aplicação.
+
+(Front-end - Interface Gráfica):
+
+A tela principal da aplicação é exibida.
+
+A interface apresenta:
+
+Um controle para "Selecionar Arquivos de Planilha".
+
+Um campo de entrada para "Linha do Cabeçalho (ex: 1)".
+
+Uma seção "Mapeamento de Colunas" com etiquetas descritivas e campos de entrada para:
+
+"Coluna ID do Caso:" [campo de texto] (Descrição auxiliar: "Ex: Protocolo, Nº Ticket. Identificador único da reclamação.")
+
+"Coluna Data de Abertura:" [campo de texto] (Descrição auxiliar: "Ex: Data Criação, Início. Data em que a reclamação foi registrada.")
+
+"Coluna Data de Prazo:" [campo de texto] (Descrição auxiliar: "Ex: Vencimento, Prazo SLA. Data limite para a resposta.")
+
+"Coluna Data de Resposta:" [campo de texto] (Descrição auxiliar: "Ex: Data Tratativa, Respondido Em. Data da solução/resposta. Deixe em branco se não aplicável a todos os relatórios ou se não houver coluna.")
+
+"Coluna Nome da Empresa:" [campo de texto] (Descrição auxiliar: "Ex: Empresa, Organização. Nome da empresa associada à reclamação.")
+
+Um botão de ação "Processar Arquivos".
+
+Uma área dedicada para exibir métricas resumidas (utilizando elementos de texto).
+
+Um componente de tabela para exibir os dados detalhados das reclamações processadas.
+
+Um controle de seleção (como um menu dropdown) para filtrar por "Empresa" (inicialmente com uma opção "Todas" e posteriormente populado com as empresas identificadas).
+
+Um botão de ação "Download Relatório".
+
+Uma área de mensagens ou log para exibir informações sobre o processamento e eventuais alertas ou erros.
+
+(Usuário):
+
+Aciona o controle "Selecionar Arquivos de Planilha".
+
+(Front-end - Interface Gráfica): Apresenta um diálogo padrão do sistema operacional para seleção de arquivos, permitindo ao usuário escolher múltiplos arquivos de planilha. Os caminhos dos arquivos selecionados são armazenados temporariamente pela aplicação.
+
+Preenche o campo "Linha do Cabeçalho".
+
+Preenche os campos de mapeamento de colunas com os nomes exatos das colunas presentes em seus arquivos de planilha.
+
+Aciona o botão "Processar Arquivos".
+
+(Front-end - Interface Gráfica):
+
+Ao acionar "Processar Arquivos":
+
+Coleta os valores dos campos de mapeamento e da linha do cabeçalho.
+
+Realiza validações de interface (ex: verificar se arquivos foram selecionados e se os campos de mapeamento essenciais estão preenchidos). Se alguma validação falhar, exibe uma mensagem de erro na área de status.
+
+Desabilita temporariamente o botão "Processar Arquivos" e exibe uma indicação visual de "Processando..." na área de status ou em um local apropriado.
+
+Invoca a funcionalidade de processamento do back-end, passando a lista de caminhos de arquivos, a informação da linha do cabeçalho e a estrutura de mapeamento de colunas.
+
+(Back-end - Lógica de Processamento):
+
+Recebe como entrada a lista_arquivos, a linha_cabecalho (como string ou número), e o mapeamento_colunas.
+
+Converte a linha_cabecalho para um formato numérico utilizável (considerando indexação base 0 ou 1 conforme a ferramenta de leitura de planilhas).
+
+Inicializa estruturas de dados para armazenar os dados_processados_geral, uma lista de arquivos_com_erro_leitura, e um contador para total_casos_nao_processados_faltantes.
+
+Itera sobre cada caminho_arquivo na lista_arquivos:
+
+Etapa 1: Leitura e Validação Estrutural
+
+Tenta ler o arquivo de planilha usando uma biblioteca ou ferramenta apropriada.
+
+Se a leitura falhar (arquivo corrompido, formato não suportado): registra o caminho_arquivo em arquivos_com_erro_leitura; prossegue para o próximo arquivo.
+
+Verifica se todas as colunas essenciais especificadas no mapeamento_colunas existem no cabeçalho da planilha lida. Se alguma coluna crucial estiver ausente, registra o erro para este arquivo e prossegue.
+
+Itera sobre cada linha de dados da planilha carregada:
+
+Etapa 2: Extração, Limpeza e Padronização
+
+Extrai o valor da célula correspondente ao ID_CASO mapeado, converte para string e remove espaços em branco.
+
+Tenta converter os valores das células mapeadas para DATA_ABERTURA, DATA_PRAZO e DATA_RESPOSTA (se presente) para um formato de data/hora padronizado. Utiliza parsing robusto para lidar com formatos variados e trata erros de conversão.
+
+Extrai o valor da célula correspondente ao NOME_EMPRESA mapeado, converte para string, remove espaços e aplica uma normalização básica (ex: capitalização consistente).
+
+Verifica se dados críticos (ID_CASO, DATA_ABERTURA, DATA_PRAZO) estão ausentes ou inválidos após a tentativa de conversão. Se sim, incrementa total_casos_nao_processados_faltantes; prossegue para a próxima linha da planilha.
+
+Etapa 3: Cálculos de Status, Prazos e Alertas
+
+Obtém a data_processamento (data/hora atual).
+
+Realiza os cálculos para status_reclamacao, tempo_resposta_dias, status_prazo_resposta, dias_para_vencer, status_pendencia, alerta_prazo, conforme detalhado na seção "A IDÉIA - Lógica de Negócio Detalhada - Etapa 3".
+
+Armazena todos os campos (originais limpos e calculados) para esta reclamação em uma estrutura de dados (ex: dicionário, objeto).
+
+Adiciona esta estrutura à lista dados_processados_geral.
+
+Se a lista dados_processados_geral estiver vazia após iterar por todos os arquivos e linhas, retorna um indicativo de que nenhum dado válido foi processado.
+
+Converte a lista dados_processados_geral em uma estrutura de dados tabular otimizada (ex: DataFrame, lista de listas, etc.), referida como estrutura_dados_detalhada.
+
+Etapa 4: Agregação de Métricas Globais
+
+Calcula as metricas_globais (Total de Reclamações, Respondidas, SLA, etc.) a partir da estrutura_dados_detalhada, conforme definido em "A IDÉIA - Lógica de Negócio Detalhada - Etapa 4".
+
+Etapa 5: Formatação dos Resultados para Saída (preparação para retorno à interface gráfica)
+
+Retorna a estrutura_dados_detalhada, as metricas_globais, a lista de arquivos_com_erro_leitura, e o contador total_casos_nao_processados_faltantes.
+
+(Front-end - Interface Gráfica):
+
+Recebe os resultados da lógica de processamento do back-end.
+
+Reabilita o botão "Processar Arquivos". Remove a indicação de "Processando...".
+
+Exibição de Mensagens de Status:
+
+Se houver arquivos_com_erro_leitura, exibe uma mensagem na área de status: "Os seguintes arquivos não puderam ser lidos ou faltam colunas mapeadas: [lista de arquivos]".
+
+Exibe uma mensagem como: "[N] casos não foram processados devido a dados faltantes.", onde N é total_casos_nao_processados_faltantes.
+
+Exibição de Métricas: Atualiza os elementos de texto da interface com os valores das metricas_globais:
+
+"SLA Médio: [valor] dias"
+
+"Total de Reclamações Processadas: [valor]"
+
+"Respondidas: [valor] (Dentro do Prazo: [valor], Fora do Prazo: [valor])"
+
+"Não Respondidas: [valor] (No Prazo: [valor], Vencidas: [valor])"
+
+"Alertas (Não Respondidas, No Prazo): Em Cima do Prazo (<=1d): [Qtd], Perto de Vencer (2-3d): [Qtd], Prazo Flexível (>=5d): [Qtd], Atenção (4d): [Qtd]"
+
+Preenchimento da Tabela de Dados:
+
+Limpa o conteúdo anterior da tabela.
+
+Define o número de colunas e os respectivos cabeçalhos (ex: ID Caso, Empresa, Data Abertura, etc.).
+
+Itera sobre os registros da estrutura_dados_detalhada e popula as células da tabela. Formata as datas para uma exibição legível.
+
+Popula o controle de filtro de empresa com os nomes únicos de empresas encontrados na estrutura_dados_detalhada, adicionando uma opção "Todas".
+
+Armazena a estrutura_dados_detalhada internamente na interface para permitir filtragem e download subsequentes.
+
+(Usuário):
+
+Visualiza os resultados apresentados.
+
+Pode interagir com o controle de filtro de empresa para selecionar uma empresa específica.
+
+(Front-end - Interface Gráfica):
+
+Quando o valor do controle de filtro de empresa é alterado:
+
+Obtém a estrutura_dados_detalhada original que foi armazenada.
+
+Se a empresa selecionada não for "Todas", filtra os dados para incluir apenas as reclamações da empresa selecionada, gerando uma estrutura_dados_filtrada.
+
+Se a opção "Todas" for selecionada, a estrutura_dados_filtrada é a mesma que a original.
+
+Atualiza o conteúdo da tabela de dados para exibir a estrutura_dados_filtrada.
+
+(Recomendado) Recalcula e atualiza as métricas resumidas com base nos dados filtrados.
+
+(Usuário):
+
+Aciona o botão "Download Relatório".
+
+(Front-end - Interface Gráfica):
+
+Ao acionar "Download Relatório":
+
+Obtém a estrutura de dados atualmente exibida na tabela (a estrutura_dados_filtrada ou a estrutura_dados_detalhada original, dependendo do filtro aplicado).
+
+Apresenta um diálogo padrão do sistema para que o usuário escolha o local de salvamento e o nome do arquivo de saída (ex: relatorio_processado.xlsx).
+
+Se o usuário confirmar a ação de salvar:
+
+Invoca uma funcionalidade do back-end para salvar a estrutura de dados em um arquivo de planilha.
+
+(Back-end - Lógica de Processamento - Função de Salvar Planilha):
+
+Recebe a estrutura de dados a ser salva e o caminho do arquivo de saída.
+
+Utiliza uma biblioteca ou ferramenta apropriada para escrever os dados no formato de planilha especificado (ex: Excel).
+
+Retorna um status de sucesso ou falha da operação.
+
+(Front-end - Interface Gráfica):
+
+Exibe uma mensagem na área de status, como: "Relatório salvo com sucesso em [caminho_saida]" ou "Erro ao salvar o relatório."
+
+Colunas ou dados essenciais que a solução manipula (reforço final):
+
+Entrada (mapeadas pelo usuário a partir da planilha):
+
+ID_CASO_ORIGINAL
+
+DATA_ABERTURA_ORIGINAL
+
+DATA_PRAZO_ORIGINAL
+
+DATA_RESPOSTA_ORIGINAL (pode ser ausente)
+
+NOME_EMPRESA_ORIGINAL
+
+Internos/Processados (armazenados na estrutura de dados interna e usados para exibição/relatório):
+
+ID_CASO (String, limpo)
+
+NOME_EMPRESA (String, padronizado: "Capital Consig", "Clickbank", "Hoje", "CIASPREV", ou outros se encontrados)
+
+DATA_ABERTURA (Objeto de Data/Hora)
+
+DATA_PRAZO (Objeto de Data/Hora)
+
+DATA_RESPOSTA (Objeto de Data/Hora ou valor indicando ausência)
+
+STATUS_RECLAMACAO (String: "Respondida", "Não Respondida")
+
+TEMPO_RESPOSTA_DIAS (Número ou N/A)
+
+STATUS_PRAZO_RESPOSTA (String: "Dentro do Prazo", "Fora do Prazo", N/A)
+
+DIAS_PARA_VENCER (Número inteiro ou N/A, negativo se vencido)
+
+STATUS_PENDENCIA (String: "No Prazo, Não Respondida", "Vencida e Não Respondida", N/A)
+
+ALERTA_PRAZO (String: "Em Cima do Prazo (<=1 dia)", "Perto de Ultrapassar o Prazo (2-3 dias)", "Prazo Flexível (>=5 dias)", "Atenção (4 dias)", N/A)
+
+Métricas Agregadas (para o resumo):
+
+SLA Médio (Tempo Médio de Resposta em dias)
+
+Total de Reclamações Processadas
+
+Total Respondidas / Total Não Respondidas
+
+Total Respondidas Dentro do Prazo / Total Respondidas Fora do Prazo
+
+Total Não Respondidas No Prazo / Total Não Respondidas Vencidas
+
+Contagens para cada categoria de ALERTA_PRAZO.
+
+Total de Casos Não Processados por Dados Faltantes.
+
+Lista de Arquivos com Erro de Leitura/Estrutura.
