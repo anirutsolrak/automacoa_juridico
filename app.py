@@ -23,6 +23,8 @@ def main():
         st.session_state.metrics = None
     if 'column_mapping' not in st.session_state:
         st.session_state.column_mapping = {}
+    if 'mapping_confirmed' not in st.session_state:
+        st.session_state.mapping_confirmed = False
     
     # Sidebar for file upload and configuration
     with st.sidebar:
@@ -46,8 +48,18 @@ def main():
                 help="Especifique em qual linha estão os nomes das colunas"
             )
             
+            # Reset mapping button if already configured
+            if st.session_state.mapping_confirmed:
+                if st.button("🔄 Reconfigurar Mapeamento"):
+                    st.session_state.mapping_confirmed = False
+                    st.session_state.column_mapping = {}
+                    st.rerun()
+            
             # Process files button
             if st.button("🔄 Processar Arquivos", type="primary"):
+                # Reset mapping for new files
+                st.session_state.mapping_confirmed = False
+                st.session_state.column_mapping = {}
                 process_files(uploaded_files, header_row)
     
     # Main content area
@@ -89,10 +101,13 @@ def process_files(uploaded_files, header_row):
         progress_bar.progress(30)
         
         # Step 2: Column mapping interface
-        status_text.text("Configurando mapeamento de colunas...")
+        status_text.text("Aguardando configuração de mapeamento...")
         
-        if not configure_column_mapping(file_info):
-            return
+        # Check if column mapping is already configured
+        if not st.session_state.mapping_confirmed:
+            mapping_result = configure_column_mapping(file_info)
+            if not mapping_result:
+                return
         
         progress_bar.progress(50)
         
@@ -232,7 +247,9 @@ def configure_column_mapping(file_info):
                 'company_name': company_col
             }
             
+            st.session_state.mapping_confirmed = True
             st.success("✅ Mapeamento configurado com sucesso!")
+            st.rerun()
             return True
     
     return False
