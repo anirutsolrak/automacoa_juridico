@@ -8,9 +8,6 @@ class ComplaintProcessor:
     """Process complaint data and calculate SLA metrics"""
     
     def __init__(self):
-        self.known_companies = [
-            'Capital Consig', 'Clickbank', 'Hoje', 'CIASPREV'
-        ]
         self.processing_date = datetime.now()
     
     def process_file(self, df: pd.DataFrame, column_mapping: Dict[str, str], filename: str) -> Tuple[pd.DataFrame, List[str]]:
@@ -48,19 +45,21 @@ class ComplaintProcessor:
             return pd.DataFrame(), errors
         
         # Process each row
-        for idx, row in df.iterrows():
+        for row_idx, row in df.iterrows():
             try:
+                row_num = row_idx + 1
                 processed_row = self._process_single_complaint(
-                    row, column_mapping, filename, idx + 1
+                    row, column_mapping, filename, row_num
                 )
                 
                 if processed_row:
                     processed_rows.append(processed_row)
                 else:
-                    errors.append(f"Linha {idx + 1} em {filename}: dados críticos faltando")
+                    errors.append(f"Linha {row_num} em {filename}: dados críticos faltando")
                     
             except Exception as e:
-                errors.append(f"Erro na linha {idx + 1} em {filename}: {str(e)}")
+                row_num = row_idx + 1
+                errors.append(f"Erro na linha {row_num} em {filename}: {str(e)}")
         
         if processed_rows:
             result_df = pd.DataFrame(processed_rows)
@@ -69,7 +68,7 @@ class ComplaintProcessor:
             return pd.DataFrame(), errors
     
     def _process_single_complaint(self, row: pd.Series, column_mapping: Dict[str, str], 
-                                filename: str, row_num: int) -> Dict[str, Any]:
+                                filename: str, row_num: int) -> Dict[str, Any] | None:
         """Process a single complaint row"""
         
         # Extract raw values
@@ -107,7 +106,7 @@ class ComplaintProcessor:
         
         # Determine deadline status for responded complaints
         deadline_status = None
-        if complaint_status == "Respondida":
+        if complaint_status == "Respondida" and response_date and deadline_date:
             if response_date <= deadline_date:
                 deadline_status = "Dentro do Prazo"
             else:
@@ -144,7 +143,7 @@ class ComplaintProcessor:
             'source_row': row_num
         }
     
-    def _clean_case_id(self, case_id_raw: Any) -> str:
+    def _clean_case_id(self, case_id_raw: Any) -> str | None:
         """Clean and validate case ID"""
         if pd.isna(case_id_raw):
             return None
@@ -152,7 +151,7 @@ class ComplaintProcessor:
         case_id = str(case_id_raw).strip()
         return case_id if case_id else None
     
-    def _parse_date(self, date_raw: Any) -> datetime:
+    def _parse_date(self, date_raw: Any) -> datetime | None:
         """Parse date from various formats"""
         if pd.isna(date_raw):
             return None
@@ -199,42 +198,18 @@ class ComplaintProcessor:
             return None
     
     def _normalize_company_name(self, company_raw: Any) -> str:
-        """Normalize company name to known companies"""
+        """Clean company name while preserving original text"""
         if pd.isna(company_raw):
             return "Não Identificada"
         
-        company_str = str(company_raw).strip().lower()
+        # Simply clean the company name without forcing specific mappings
+        company_name = str(company_raw).strip()
         
-        # Map variations to known companies
-        company_mappings = {
-            'capital consig': 'Capital Consig',
-            'capitalconsig': 'Capital Consig',
-            'capital': 'Capital Consig',
-            'consig': 'Capital Consig',
-            
-            'clickbank': 'Clickbank',
-            'click bank': 'Clickbank',
-            'click': 'Clickbank',
-            
-            'hoje': 'Hoje',
-            'hoje emprestimos': 'Hoje',
-            
-            'ciasprev': 'CIASPREV',
-            'cias prev': 'CIASPREV',
-            'cias': 'CIASPREV'
-        }
+        # Return empty string as "Não Identificada"
+        if not company_name:
+            return "Não Identificada"
         
-        # Direct mapping
-        if company_str in company_mappings:
-            return company_mappings[company_str]
-        
-        # Partial matching
-        for key, value in company_mappings.items():
-            if key in company_str or company_str in key:
-                return value
-        
-        # Return capitalized original if no match
-        return str(company_raw).strip().title()
+        return company_name
     
     def _calculate_alert_level(self, days_to_deadline: int) -> str:
         """Calculate alert level based on days remaining"""
@@ -265,7 +240,7 @@ class ComplaintProcessor:
         
         # Response time metrics
         response_times = responded['response_time_days'].dropna()
-        average_response_time = response_times.mean() if not response_times.empty else 0
+        average_response_time = float(response_times.mean()) if not response_times.empty else 0.0
         
         # Pending status breakdown
         not_responded = df[df['complaint_status'] == 'Não Respondida']
