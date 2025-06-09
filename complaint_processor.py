@@ -45,9 +45,9 @@ class ComplaintProcessor:
             return pd.DataFrame(), errors
         
         # Process each row
-        for row_idx, row in df.iterrows():
+        for i, (row_idx, row) in enumerate(df.iterrows()):
             try:
-                row_num = row_idx + 1
+                row_num = i + 1
                 processed_row = self._process_single_complaint(
                     row, column_mapping, filename, row_num
                 )
@@ -58,7 +58,7 @@ class ComplaintProcessor:
                     errors.append(f"Linha {row_num} em {filename}: dados críticos faltando")
                     
             except Exception as e:
-                row_num = row_idx + 1
+                row_num = i + 1
                 errors.append(f"Erro na linha {row_num} em {filename}: {str(e)}")
         
         if processed_rows:
@@ -239,8 +239,11 @@ class ComplaintProcessor:
         within_deadline_percentage = (within_deadline / total_responded * 100) if total_responded > 0 else 0
         
         # Response time metrics
-        response_times = responded['response_time_days'].dropna()
-        average_response_time = float(response_times.mean()) if not response_times.empty else 0.0
+        if not responded.empty and 'response_time_days' in responded.columns:
+            response_times = responded['response_time_days'].dropna()
+            average_response_time = float(response_times.mean()) if len(response_times) > 0 else 0.0
+        else:
+            average_response_time = 0.0
         
         # Pending status breakdown
         not_responded = df[df['complaint_status'] == 'Não Respondida']
