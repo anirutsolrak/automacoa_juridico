@@ -169,20 +169,26 @@ class ComplaintProcessor:
         if not date_str:
             return None
         
-        # Common date formats to try
+        # Common date formats to try (Brazilian format first)
         date_formats = [
-            '%Y-%m-%d',
-            '%d/%m/%Y',
-            '%m/%d/%Y',
-            '%d-%m-%Y',
-            '%Y/%m/%d',
-            '%d/%m/%y',
-            '%m/%d/%y',
-            '%d-%m-%y',
-            '%Y-%m-%d %H:%M:%S',
-            '%d/%m/%Y %H:%M:%S',
+            '%d/%m/%Y %H:%M:%S',  # 26/05/2025 16:33:46
+            '%d/%m/%Y %H:%M',     # 26/05/2025 16:33
+            '%d/%m/%Y',           # 09/06/2025
+            '%d-%m-%Y %H:%M:%S',  # 26-05-2025 16:33:46
+            '%d-%m-%Y %H:%M',     # 26-05-2025 16:33
+            '%d-%m-%Y',           # 09-06-2025
+            '%d/%m/%y %H:%M:%S',  # 26/05/25 16:33:46
+            '%d/%m/%y %H:%M',     # 26/05/25 16:33
+            '%d/%m/%y',           # 09/06/25
+            '%Y-%m-%d %H:%M:%S',  # ISO format
             '%Y-%m-%d %H:%M',
-            '%d/%m/%Y %H:%M'
+            '%Y-%m-%d',
+            '%m/%d/%Y %H:%M:%S',  # US format
+            '%m/%d/%Y %H:%M',
+            '%m/%d/%Y',
+            '%Y/%m/%d %H:%M:%S',
+            '%Y/%m/%d %H:%M',
+            '%Y/%m/%d'
         ]
         
         for fmt in date_formats:

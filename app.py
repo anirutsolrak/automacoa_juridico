@@ -70,10 +70,11 @@ def main():
 
 def process_files(uploaded_files, header_row):
     """Process uploaded files with column mapping"""
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    error_container = st.empty()
+    
     try:
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-        
         # Step 1: Validate files and extract column information
         status_text.text("Validando arquivos...")
         progress_bar.progress(10)
@@ -83,6 +84,7 @@ def process_files(uploaded_files, header_row):
         
         for i, file in enumerate(uploaded_files):
             try:
+                status_text.text(f"Validando arquivo {i+1}/{len(uploaded_files)}: {file.name}")
                 # Read file to get column names
                 if file.name.endswith('.csv'):
                     df = pd.read_csv(file, header=header_row-1, nrows=0)
@@ -94,8 +96,12 @@ def process_files(uploaded_files, header_row):
                     'name': file.name,
                     'columns': list(df.columns)
                 })
+                st.write(f"✅ Arquivo {file.name} validado - {len(df.columns)} colunas encontradas")
             except Exception as e:
-                st.error(f"Erro ao ler arquivo {file.name}: {str(e)}")
+                error_msg = f"Erro ao ler arquivo {file.name}: {str(e)}"
+                st.error(error_msg)
+                import traceback
+                st.code(traceback.format_exc())
                 return
         
         progress_bar.progress(30)
@@ -120,6 +126,7 @@ def process_files(uploaded_files, header_row):
         
         for i, info in enumerate(file_info):
             try:
+                status_text.text(f"Processando arquivo {i+1}/{len(file_info)}: {info['name']}")
                 # Reset file pointer
                 info['file'].seek(0)
                 
@@ -128,6 +135,8 @@ def process_files(uploaded_files, header_row):
                     df = pd.read_csv(info['file'], header=header_row-1)
                 else:
                     df = pd.read_excel(info['file'], header=header_row-1)
+                
+                st.write(f"📊 Lidos {len(df)} registros do arquivo {info['name']}")
                 
                 # Process data
                 processed_df, errors = processor.process_file(
@@ -138,9 +147,13 @@ def process_files(uploaded_files, header_row):
                 
                 if not processed_df.empty:
                     all_data.append(processed_df)
+                    st.write(f"✅ {len(processed_df)} registros processados com sucesso")
+                else:
+                    st.warning(f"⚠️ Nenhum registro válido encontrado em {info['name']}")
                 
                 if errors:
                     processing_errors.extend(errors)
+                    st.write(f"⚠️ {len(errors)} avisos encontrados")
                 
                 progress_bar.progress(50 + (40 * (i + 1) / len(file_info)))
                 
@@ -148,6 +161,8 @@ def process_files(uploaded_files, header_row):
                 error_msg = f"Erro ao processar {info['name']}: {str(e)}"
                 processing_errors.append(error_msg)
                 st.error(error_msg)
+                import traceback
+                st.code(traceback.format_exc())
         
         progress_bar.progress(90)
         
@@ -176,7 +191,10 @@ def process_files(uploaded_files, header_row):
             st.error("Nenhum dado válido foi processado. Verifique os arquivos e o mapeamento de colunas.")
     
     except Exception as e:
-        st.error(f"Erro durante o processamento: {str(e)}")
+        error_container.error(f"Erro durante o processamento: {str(e)}")
+        st.error(f"Detalhes do erro: {type(e).__name__}: {str(e)}")
+        import traceback
+        st.code(traceback.format_exc())
 
 def configure_column_mapping(file_info):
     """Configure column mapping interface"""
